@@ -1,0 +1,145 @@
+<!-- Add external CSS to section -->
+{{ 'klaviyo-custom-form-section.css' | asset_url | stylesheet_tag }}
+
+<!-- Start Script that controls Klaviyo JS -->
+<script>
+//Function that checks whether the Klaviyo Track API response succeeded or failed and determines what to do from there
+function responseChecker(response) {
+  if (response === 0) {
+    //This is if the response didn't throw an error but came back as "0", meaning didn't work with Klaviyo.
+    console.log('Klaviyo Submission Failed!');
+    document.querySelectorAll('.success-message').forEach(e => e.style.display = 'none');
+    document.querySelectorAll('.failed-message').forEach(e => e.style.display = 'block');
+  } else if (response === 1) {
+    //This is if the response succeeded from Klaviyo
+    console.log('Klaviyo Submission Success!');
+    document.querySelectorAll('.failed-message').forEach(e => e.style.display = 'none');
+    document.querySelectorAll('.success-message').forEach(e => e.style.display = 'block');
+  } else {
+    //This is if there was an error with the response other than coming back as "0"
+    console.log('Form Submission - Unknown Error. Error Code: ', error);
+    document.querySelectorAll('.failed-message').forEach(e => e.style.display = 'block');
+  }
+}
+
+//Function that runs all of the processes when the submit button is clicked
+function submitPressed() {
+  //Here we are setting all of the variables. These are all "const" because they are selecting an element on the page that won't change.
+  const firstName = document.getElementById('ContactForm-firstName').value;
+  const lastName = document.getElementById('ContactForm-lastName').value;
+  const email = document.getElementById('ContactForm-email').value;
+  const phoneNumber = document.getElementById('ContactForm-phone').value;
+  //This variable is a let because it will change based on which sport is chosen.
+  let favoriteSport = '';
+
+  //Run through the radio buttons and determine which is checked, then set the variable to that.
+  if (document.getElementById('basketball').checked) {
+    favoriteSport = "Basketball";
+  } else if (document.getElementById('football').checked) {
+    favoriteSport = "Football";
+  } else if (document.getElementById('soccer').checked) {
+    favoriteSport = "Soccer";
+  } else {
+    favoriteSport = "None Chosen";
+  }
+
+  //Run the actual Klaviyo Track API and insert the variables from the values above.
+  const options = {
+    method: 'POST',
+    headers: {Accept: 'text/html', 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: new URLSearchParams({
+      data: `{
+        "token": "RjJb6d",
+        "event": "Filled Out Newsletter",
+        "customer_properties": {
+          "$email": "${email}",
+          "$first_name": "${firstName}",
+          "$last_name": "${lastName}",
+          "$phone_number": "${phoneNumber}",
+          "favorite_sport": "${favoriteSport}"
+        }
+      }`
+    })
+  };
+  
+  fetch('https://a.klaviyo.com/api/track', options)
+  .then(response => response.json())
+  .then(response => responseChecker(response));
+  
+}
+</script>
+<!-- End Script that controls Klaviyo JS -->
+
+<div class="contact page-width page-width--narrow spaced-section">
+  <h2 class="title">{{ section.settings.heading | escape }}</h2>
+  <!-- Start of the form. We run the function submitPressed() when submitted -->
+  <form onsubmit="event.preventDefault(); submitPressed();" class="contact-form">
+    <div class="contact__fields">
+      <div class="field">
+        <input class="field__input" autocomplete="name" type="text" id="ContactForm-firstName" name="contact[First Name]" value="{% if form.name %}{{ form.name }}{% elsif customer %}{{ customer.first_name }}{% endif %}" placeholder="First Name">
+        <label class="field__label" for="ContactForm-firstName">First Name</label>
+      </div>
+      <div class="field">
+        <input class="field__input" autocomplete="name" type="text" id="ContactForm-lastName" name="contact[Last Name]" value="{% if form.name %}{{ form.last_name }}{% elsif customer %}{{ customer.last_name }}{% endif %}" placeholder="Last Name">
+        <label class="field__label" for="ContactForm-lastName">Last Name</label>
+      </div>
+    </div>
+    <div class="contact__fields">
+      <div class="field field--with-error">
+        <input
+          autocomplete="email"
+          type="email"
+          id="ContactForm-email"
+          class="field__input"
+          name="contact[email]"
+          spellcheck="false"
+          autocapitalize="off"
+          value="{% if form.email %}{{ form.email }}{% elsif customer %}{{ customer.email }}{% endif %}"
+          aria-required="true"
+          placeholder="{{ 'templates.contact.form.email' | t }}"
+        >
+        <label class="field__label" for="ContactForm-email">{{ 'templates.contact.form.email' | t }} <span aria-hidden="true">*</span></label>
+      </div>
+      <div class="field">
+        <input type="tel" id="ContactForm-phone" class="field__input" autocomplete="tel" name="contact[{{ 'templates.contact.form.phone' | t }}]" pattern="[0-9\-]*" value="{% if form.phone %}{{ form.phone }}{% elsif customer %}{{ customer.phone }}{% endif %}" placeholder="{{ 'templates.contact.form.phone' | t }}">
+        <label class="field__label" for="ContactForm-phone">{{ 'templates.contact.form.phone' | t }}</label>
+      </div>
+    </div>
+
+    <input type="radio" id="basketball" name="fav_sport" value="Basketball"><label for="basketball">Basketball</label><br/>
+    <input type="radio" id="football" name="fav_sport" value="Football"><label for="football">Football</label><br/>
+    <input type="radio" id="soccer" name="fav_sport" value="Soccer"><label for="soccer">Soccer</label><br/>
+    <input type="radio" id="none" name="fav_sport" value="None of the Above"><label for="none">None of the Above</label>
+    
+    <div class="form-status form-status-list form__message success-message" tabindex="-1" autofocus>{% render 'icon-success' %} Thank you for submitting our form! Your information has been sent to Klaviyo!</div>
+    <div class="form-status form-status-list form__message failed-message" tabindex="-1" autofocus>{% render 'icon-error' %} We're sorry, it looks like that submission didn't go through. Please ensure you have a proper email address entered!</div>
+    
+    <div class="contact__button">
+      <button type="submit" class="button">
+        {{ 'templates.contact.form.send' | t }}
+      </button>
+    </div>
+  </form>
+</div>
+
+{% schema %}
+{
+  "name": "Custom Klaviyo Form",
+  "tag": "section",
+  "class": "spaced-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "default": "Contact form",
+      "label": "Heading"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Klaviyo Form",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}

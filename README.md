@@ -22,6 +22,14 @@ This specific section is hard coded with some content, but that content can be c
 * Keep in mind that this section has some styling specific to the theme, so if it's added to a different theme, styling may need to be adjusted.
 
 
+## How It Works
+The way to code works is that it's injected directly into a Shopify Sections Liquid file, so when the form is filled out and the submit button is pressed, it fires a custom function that gathers all of the data from the form, turns that data into variables, and then adds those variables into the Klaviyo track API request.
+
+The most important Klaviyo code can all be seen here:
+
+<img width="1202" alt="Screen Shot 2022-08-17 at 8 20 45 PM" src="https://user-images.githubusercontent.com/102880120/185265820-3d9b1981-9dbb-4438-856d-24f28aab7626.png">
+
+
 ## Authors
 
 Max Rand
